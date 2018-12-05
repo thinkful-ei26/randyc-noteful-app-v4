@@ -39,6 +39,10 @@ app.use(express.static('public'));
 // Parse request body
 app.use(express.json());
 
+// Protect endpoints using JWT Strategy
+const jwtAuth = passport.authenticate('jwt', { session: false, failWithError: true });
+
+
 // Mount routers
 app.use('/api/notes', jwtAuth, notesRouter);
 app.use('/api/folders', jwtAuth, foldersRouter);
