@@ -3,11 +3,15 @@
 const mongoose = require('mongoose');
 
 const schema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true }
+  name: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 });
 
 // Add `createdAt` and `updatedAt` fields
 schema.set('timestamps', true);
+
+//Compound key -- so different users can have identically named tags
+schema.index = ({ name: 1, userId: 1 }, {unique: true });
 
 // Transform output during `res.json(data)`, `console.log(data)` etc.
 schema.set('toObject', {
