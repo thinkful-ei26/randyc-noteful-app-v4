@@ -6,7 +6,12 @@ const mongoose = require('mongoose');
 const Tag = require('../models/tag');
 const Note = require('../models/note');
 
+const passport = require('passport');
+
 const router = express.Router();
+
+// Protect endpoints using JWT Strategy
+router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
 /* ========== GET/READ ALL ITEMS ========== */
 router.get('/', (req, res, next) => {

@@ -6,29 +6,57 @@ const mongoose = require('mongoose');
 
 const User = require('../models/user');
 
-const router = express.Router();
+const passport = require('passport');
 
-/* ---- POST ----- */
+const router = express.Router();
+ 
+// Protect endpoints using JWT Strategy
+//router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
+
+router.get('/',(req,res,next) => {
+
+  User.find()
+    .sort('asc')
+    .then (results => {
+      res.json(results);
+ 
+    })
+    .catch(error => {
+
+      next(error);
+  
+    });
+  
+});
+
+/* ---- POST CREATE----- */
 
 router.post('/', (req,res,next) => {
 
-  const { username, password } = req.body;
+  const { username, password, fullname } = req.body;//what syntax does front end use camel case or lower case for fullname?
+ 
+  return User.hashPassword(password)
+ 
+    .then(digest => {
+      
+      const newUser = {
+        username,
+        password: digest,
+        fullname
+      };
 
-  const newUser = {
 
-    username: username,
-    password: password
-
-  };
-
-  User.create(newUser)
+      return User.create(newUser);
+    })
     .then(result => {
-      res.location(`${req.originalUrl}`).status(201).json(result);
+      return res.status(201).location(`/api/users/${result.id}`).json(result);
     })
     .catch(err => {
-
+      if (err.code === 11000) {
+        err = new Error('The username already exists');
+        err.status = 400;
+      }
       next(err);
-
     });
 
 

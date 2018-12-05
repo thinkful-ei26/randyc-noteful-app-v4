@@ -5,10 +5,14 @@ const User = require('../models/user');
 
 const localStrategy = new LocalStrategy((username, password, done) => {
 
+  //console.log('localStrategy',localStrategy);
+
   let user;
 
   User.findOne({ username })
     .then(results => {
+
+      console.log('results',results);
 
       user = results;
 
@@ -23,7 +27,13 @@ const localStrategy = new LocalStrategy((username, password, done) => {
 
       }
 
-      const isValid = user.validatePassword(password);
+      // const isValid = user.validatePassword(password);
+
+      return user.validatePassword(password);
+
+    })
+
+    .then(isValid => {
 
       if(!isValid) {
 
@@ -37,7 +47,7 @@ const localStrategy = new LocalStrategy((username, password, done) => {
       }
 
       return done(null, user);
-
+ 
     })
     .catch(err => {
       
@@ -51,3 +61,5 @@ const localStrategy = new LocalStrategy((username, password, done) => {
     });
   
 });
+
+module.exports = localStrategy;
