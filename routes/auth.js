@@ -23,8 +23,12 @@ const jwt = require('jsonwebtoken');
 const options = {session: false, failWithError: true};
 const localAuth = passport.authenticate('local', options);
 
+/* --- POST REFRESH ---*/
+const jwtAuth = passport.authenticate('jwt', { session: false, failWithError: true });
+
 console.log('>>>> hello');
 
+ 
 function createAuthToken (user) {
  
   return jwt.sign({ user }, JWT_SECRET, {
@@ -41,6 +45,11 @@ router.post('/login', localAuth, function (req,res) {
   const authToken = createAuthToken(req.user);
   return res.json( {authToken} );
 
+});
+ 
+router.post('/refresh', jwtAuth, (req, res) => {
+  const authToken = createAuthToken(req.user);
+  res.json({ authToken });
 });
 
 

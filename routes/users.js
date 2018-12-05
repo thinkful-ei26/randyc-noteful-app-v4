@@ -33,7 +33,7 @@ router.get('/',(req,res,next) => {
 
 router.post('/', (req,res,next) => {
 
-  const { username, password, fullname } = req.body;//what syntax does front end use camel case or lower case for fullname?
+  const { username, password, fullname } = req.body;//what syntax does front end use? --- camel case or lower case for fullname?
  
   return User.hashPassword(password)
  
