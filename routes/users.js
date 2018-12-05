@@ -2,11 +2,11 @@
 
 const express = require('express');
 
-const mongoose = require('mongoose');
+//const mongoose = require('mongoose');
 
 const User = require('../models/user');
 
-const passport = require('passport');
+//const passport = require('passport');
 
 const router = express.Router();
  
@@ -45,8 +45,8 @@ router.post('/', (req,res,next) => {
         fullname
       };
 
-
       return User.create(newUser);
+      
     })
     .then(result => {
       return res.status(201).location(`/api/users/${result.id}`).json(result);
