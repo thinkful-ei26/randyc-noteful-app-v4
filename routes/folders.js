@@ -18,7 +18,11 @@ router.get('/', (req, res, next) => {
 
   const userId = req.user.id;//coming from jwt
 
-  Folder.find(userId)
+  let filter = { userId };
+
+  console.log('folder filter >>>>> ',filter);
+
+  Folder.find(filter)
     .sort('name')
     .then(results => {
       res.json(results);
@@ -101,7 +105,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateFolder = { userId, name };
 
-  Folder.findOneAndUpdate({_id: id}, updateFolder, { new: true })
+  Folder.findOneAndUpdate({ _id: id, userId }, updateFolder, { new: true })
     .then(result => {
       if (result) {
         res.json(result);

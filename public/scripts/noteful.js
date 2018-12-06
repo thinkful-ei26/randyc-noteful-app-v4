@@ -139,7 +139,7 @@ const noteful = (function () {
       event.preventDefault();
 
       const noteId = getNoteIdFromElement(event.currentTarget);
-
+ 
       api.details(`/api/notes/${noteId}`)
         .then((response) => {
           store.currentNote = response;
