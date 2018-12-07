@@ -4,12 +4,119 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const Note = require('../models/note');
+const Folder = require('../models/folder');
+const Tag = require('../models/tag');
 
 const passport = require('passport');
 
 const router = express.Router();
 
 
+
+//Do note folder id's and tags belong to the current user?
+ 
+//folderId = undefined
+//folderId = invalid
+//folderId = empty string
+//folderId = valid mongo id just does not exist ...yet
+//folderId = folder belongs ot another user
+
+//**  folderId = valid folder id which belongs to the current user
+
+//Validation function for folder ids 
+function validateFolderId(folderId, userId) {
+
+  console.log('hello folders validation function', folderId, userId);
+
+  //undefined means there is no folder assigned to the note so keep going...
+  if(folderId === undefined){
+
+    return Promise.resolve();
+
+  }
+
+   
+
+  //If we get here then there must be a folder assigned to the note so ...Is folder Id a valid mongo id?
+  if (!mongoose.Types.ObjectId.isValid(folderId)) {
+    
+    const err = new Error('The `folderId` is not valid');//not valid mongo id
+    err.status = 400;
+    return false;
+
+  }
+
+  //If we get here then the note has a folder id and the folder id is valid but 
+  //now there should be a Folder in the folder collection with the current user's id attached to it...
+  return Folder.countDocuments({ _id: folderId, userId })
+    .then(count => {
+      if(count === 0 && folderId) {
+        const err = new Error('The `folderId` is not valid');//does not exist in the Folder collection with the current user id attached
+        err.status = 400;
+        return Promise.reject(err);
+      }
+        
+    });
+ 
+
+}
+
+
+
+function validateTagIds(tags, userId) {
+
+  console.log('hello tags validation function', tags, userId);
+
+  //no tag exists move on ....
+  if(tags === undefined){
+
+    return Promise.resolve();
+
+  }
+
+  console.log('ok so the note has something in the tags field....');
+
+  //tags must exist ...check to make sure they are in an array...
+  if (!Array.isArray(tags)) {
+    const err = new Error('The `tags` property must be an array');
+    err.status = 400;
+    return Promise.reject(err);
+  }
+
+   
+   
+  console.log('>>> tags length is: ',tags.length);//testing
+
+  //check each tag fro valid id... 
+  for (let i = 0; i < tags.length; i++){
+     
+    console.log('>>> tag', tags[i]);//testing
+
+    //Is tag Id a valid mongo id?
+    if (tags[i] && !mongoose.Types.ObjectId.isValid(tags[i])) {
+    
+      const err = new Error('The `tagId` is not valid');
+      err.status = 400;
+      return Promise.reject(err);
+
+    }
+
+  }
+   
+  //Look at the Tags collection to see how many tags with this user id and these tag ids exist
+  //then compare to the the current user and the curent length of the tags array to see if they are equal
+  return Tag.find({ $and: [{ _id: { $in: tags }, userId }] })
+    .then(results => {
+      if (tags.length !== results.length) {
+        const err = new Error('The `tags` array contains an invalid `id`');
+        err.status = 400;
+        return Promise.reject(err);
+      }
+    });
+ 
+
+}
+ 
 // Protect endpoints using JWT Strategy
 router.use('/', passport.authenticate('jwt', { session: false, failWithError: true }));
 
@@ -37,9 +144,7 @@ router.get('/', (req, res, next) => {
   if (tagId) {
     filter.tags = tagId;
   }
-
-  console.log('notes filter: ',filter);
-
+ 
   Note.find(filter)
     .populate('tags')
     .sort({ updatedAt: 'desc' })
@@ -66,8 +171,7 @@ router.get('/:id', (req, res, next) => {
     return next(err);
   }
 
-  //console.log('note id >>>>>', {_id:id});
-
+  
   Note.findOne({ _id: id, userId })
     .populate('tags')
     .then(result => {
@@ -81,59 +185,7 @@ router.get('/:id', (req, res, next) => {
       next(err);
     });
 });
-
-//folderId = undefined
-//folderId = invalid
-//folderId = empty string
-//folderId = valid mongo id just does not exist ...yet
-//folderId = folder belongs ot another user
-
-//**  folderId = valid folder id which belongs to the current user
-
-//Validation for folder ids -- later
-const validateFolderId = function (folderId, userId) {
-
-  //undefiend go make it
-  if(folderId === undefined){
-
-    return Promise.resolved();
-
-  }
-
-  //invalid folder Id can't be empty
-  if(folderId === ''){
-
-    const err = new Error('The `folderId` is not valid');
-    err.status = 400;
-    return Promise.reject(err);
-
-  }
-
-  //Is folder Id is a valid mongo id?
-  if (folderId && !mongoose.Types.ObjectId.isValid(folderId)) {
-    
-    const err = new Error('The `folderId` is not valid');
-    err.status = 400;
-    return false;
-
-  }
-
-  //Duplicate id check -- any docs with the same folderId?
-  folderId.countDocuments({ _id: folderId, userId })
-    .then(count => {
-      if(count === 0 && folderId) {
-        const err = new Error('The `folderId` is not vlaid');
-        err.status = 400;
-        return Promise.reject(err);
-      }
-        
-    });
  
-
-};
-
-
-
 //Works
 /* ========== POST/CREATE AN ITEM ========== */
 router.post('/', (req, res, next) => {
@@ -148,46 +200,34 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
-  
- 
-  //tags
-  if (tags) {
-    const badIds = tags.filter((tag) => !mongoose.Types.ObjectId.isValid(tag));
-    if (badIds.length) {
-      const err = new Error('The `tags` array contains an invalid `id`');
-      err.status = 400;
-      return next(err);
-    }
-  }
-
 
   const newNote = { userId, title, content, folderId, tags };
- 
+
+  // if folder id is blank then get rid of the field in newNote object... 
   if (newNote.folderId === '') {
     delete newNote.folderId;
   }
 
 
-  //Folders
-  // return validateFolderId(folderId, userId)
-  //   .then(() => {
+
+  console.log('new note >>>> ',newNote);
+
+  Promise.all([
+    validateFolderId(newNote.folderId, userId),
+    validateTagIds(newNote.tags, userId)
  
-  //     return Note.create(newNote);
+  ])
+    .then(() => {
+      
+      console.log('finished with tags function...'); 
 
-  //   })
-  //   .then(result => {
-
-  //     res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
-
-  //   })
-  //   .catch(err => {
-  //     next(err);
-  //   });
-
-  //no validation
-  Note.create(newNote)
+      Note.create(newNote);
+        
+    })
     .then(result => {
-      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
+      console.log('result >>>> ',result);
+      //res.location(`${req.originalUrl}/${result.id}`).status(201).json(result); what is wrong here?
+      res.location(`${req.originalUrl}/${userId}`).status(201).json(result);
     })
     .catch(err => {
       next(err);
@@ -243,7 +283,26 @@ router.put('/:id', (req, res, next) => {
     toUpdate.$unset = {folderId : 1};
   }
 
-  Note.findOneAndUpdate({ _id: id, userId }, toUpdate, { new: true })
+  // Note.findOneAndUpdate({ _id: id, userId }, toUpdate, { new: true })
+  //   .then(result => {
+  //     if (result) {
+  //       res.json(result);
+  //     } else {
+  //       next();
+  //     }
+  //   })
+  //   .catch(err => {
+  //     next(err);
+  //   });
+
+  Promise.all([
+    validateFolderId(toUpdate.folderId, userId),
+    validateTagIds(toUpdate.tags, userId)
+  ])
+    .then(() => {
+      return Note.findOneAndUpdate({ _id: id, userId }, toUpdate, { new: true })
+        .populate('tags');
+    })
     .then(result => {
       if (result) {
         res.json(result);
@@ -254,6 +313,8 @@ router.put('/:id', (req, res, next) => {
     .catch(err => {
       next(err);
     });
+  
+
 });
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
