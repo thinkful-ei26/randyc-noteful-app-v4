@@ -18,6 +18,8 @@ describe('Noteful API - Users', function () {
   const password = 'examplePass';
   const fullname = 'Example User';
 
+  const usernameTest2 = '';
+
   before(function () {
     return mongoose.connect(TEST_MONGODB_URI, { useNewUrlParser: true, useCreateIndex : true })
       .then(() => User.deleteMany());
@@ -38,7 +40,9 @@ describe('Noteful API - Users', function () {
   describe('POST /api/users', function () {
 
     it('Should create a new user', function () {
+       
       let res;
+
       return chai
         .request(app)
         .post('/api/users')
@@ -64,18 +68,176 @@ describe('Noteful API - Users', function () {
         });
     });
 
-    it('Should reject users with missing username');
-    it('Should reject users with missing password');
-    it('Should reject users with non-string username');
-    it('Should reject users with non-string password');
-    it('Should reject users with non-trimmed username');
-    it('Should reject users with non-trimmed password');
-    it('Should reject users with empty username');
-    it('Should reject users with password less than 8 characters');
-    it('Should reject users with password greater than 72 characters');
-    it('Should reject users with duplicate username');
-    it('Should trim fullname');
+    it('Should reject users with missing username', function (){
+       
+      return chai
+        .request(app)
+        .post('/api/users')
+        .send({ password, fullname })
+        .then(result => {
+           
+          expect(result).to.have.status(422);
 
+        });
+       
+    });
+
+    it('Should reject users with missing password', function (){
+
+      return chai
+        .request(app)
+        .post('/api/users')
+        .send({ username, fullname })
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+ 
+    });
+ 
+    it('Should reject users with non-string username', function (){
+  
+      return chai
+        .request(app)
+        .post('/api/users')
+        .send({ username: 44, password, fullname })
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+
+
+
+    });
+ 
+    it('Should reject users with non-string password', function (){
+
+      return chai 
+        .request(app)
+        .post('/api/users')
+        .send({ username, password: 44, fullname })
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+ 
+    });
+
+
+    it('Should reject users with non-trimmed username', function (){
+
+      return chai 
+        .request(app)
+        .post('/api/users')
+        .send({ username: ' Name', password, fullname})
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+
+    });
+
+
+    it('Should reject users with non-trimmed password', function(){
+
+      return chai 
+        .request(app)
+        .post('/api/users')
+        .send({ username, password: ' Password', fullname})
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+
+    });
+
+
+    it('Should reject users with empty username', function(){
+
+      return chai 
+        .request(app)
+        .post('/api/users')
+        .send({ username: '', password, fullname })
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+
+    });
+
+
+    it('Should reject users with password less than 8 characters', function(){
+
+      return chai 
+        .request(app)
+        .post('/api/users')
+        .send({ username, password: 'a', fullname})
+        .then(result => {
+
+          expect(result).to.have.status(422);
+
+        });
+
+    });
+
+
+    it('Should reject users with password greater than 72 characters', function(){
+
+      return chai
+        .request(app)
+        .post('/api/users')
+        .send({ username, password: 'wwwwwwwwwwhhhhhhhhhhaaaaaaaaaattttttttttOMGwwwwwwwwwwhhhhhhhhhhaaaaaaaaaatttttttttt'})
+        .then(result => {
+
+          expect(result).to.have.status(422);
+ 
+        });
+
+    });
+
+
+    it('Should reject users with duplicate username', function(){
+
+      return User.create(
+        { username: 'msgreen',password }
+      )
+        .then(() => {
+
+          return chai
+            .request(app)
+            .post('/api/users')
+            .send({ username: 'msgreen', password, fullname })
+            .then(result => {
+            
+              expect(result).to.have.status(400);
+
+            });
+         
+        });
+
+    });
+
+
+    it('Should trim fullname', function(){
+
+      return chai
+        .request(app)
+        .post('/api/users')
+        .send({ username, password, fullname: ' Full Name'})
+        .then(result => {
+
+          expect(result.body.fullname).to.equal('Full Name');
+ 
+        }); 
+
+    });
+  
   });
 
 });

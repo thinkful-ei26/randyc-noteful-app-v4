@@ -18,6 +18,10 @@ const sandbox = sinon.createSandbox();
 
 describe('Noteful API - Folders', function () {
 
+  let user;
+  let token;
+  
+
   before(function () {
     return mongoose.connect(TEST_MONGODB_URI, { useNewUrlParser: true })
       .then(() => Promise.all([

@@ -126,7 +126,7 @@ router.get('/', (req, res, next) => {
  
   const userId = req.user.id;//coming from jwt
 
-  console.log('folder id >>>> ',folderId);
+  //console.log('folder id >>>> ',folderId);
 
   let filter = { userId };
  
@@ -221,13 +221,13 @@ router.post('/', (req, res, next) => {
       
       console.log('finished with tags function...'); 
 
-      Note.create(newNote);
+      return Note.create(newNote);
         
     })
     .then(result => {
       console.log('result >>>> ',result);
-      //res.location(`${req.originalUrl}/${result.id}`).status(201).json(result); what is wrong here?
-      res.location(`${req.originalUrl}/${userId}`).status(201).json(result);
+      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result); //what is wrong here?
+      // res.location(`${req.originalUrl}/${userId}`).status(201).json(result);
     })
     .catch(err => {
       next(err);
